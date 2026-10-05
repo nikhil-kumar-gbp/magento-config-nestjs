@@ -1,0 +1,50 @@
+# compiled output
+/dist
+/node_modules
+/build
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# tests
+/coverage
+/.nyc_output
+
+# environment
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# os / editors
+.DS_Store
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# runtime
+pids
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+.temp
+.tmp
+
+tsconfig.build.tsbuildinfo
