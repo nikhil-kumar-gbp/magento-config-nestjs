@@ -9,3 +9,9 @@ export interface SystemConfigResponse {
   includes?: string[];
   additional?: SystemConfiguration['additional'];
 }
+
+export enum CoreConfigScope {
+  DEFAULT = 'default',
+  WEBSITE = 'website',
+  STORE = 'store',
+}

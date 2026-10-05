@@ -93,7 +93,7 @@ function normalizeSection(
     readInclude(child, `${id} include ${index + 1}`),
   );
   const groups = takeAll(buckets, 'group').map((child, index) =>
-    normalizeGroup(child, `${id} group ${index + 1}`),
+    normalizeGroup(child, `${id} group ${index + 1}`, id),
   );
 
   return {
@@ -114,7 +114,11 @@ function normalizeSection(
   };
 }
 
-function normalizeGroup(element: XmlElement, location: string): SystemGroup {
+function normalizeGroup(
+  element: XmlElement,
+  location: string,
+  sectionId: string,
+): SystemGroup {
   const id = requireId(element, location);
   const { promoted, additionalAttributes } = splitAttributes(
     element,
@@ -124,10 +128,10 @@ function normalizeGroup(element: XmlElement, location: string): SystemGroup {
 
   const repeated = new Map<string, XmlNodeValue | XmlNodeValue[]>();
   const fields = takeAll(buckets, 'field').map((child, index) =>
-    normalizeField(child, `${location} field ${index + 1}`),
+    normalizeField(child, `${location} field ${index + 1}`, sectionId, id),
   );
   const groups = takeAll(buckets, 'group').map((child, index) =>
-    normalizeGroup(child, `${location}/${id} group ${index + 1}`),
+    normalizeGroup(child, `${location}/${id} group ${index + 1}`, sectionId),
   );
   const depends = takeDepends(buckets, location);
   const attributeNodes = takeAttributeNodes(buckets, location);
@@ -163,7 +167,12 @@ function normalizeGroup(element: XmlElement, location: string): SystemGroup {
   };
 }
 
-function normalizeField(element: XmlElement, location: string): SystemField {
+function normalizeField(
+  element: XmlElement,
+  location: string,
+  sectionId: string,
+  groupId: string,
+): SystemField {
   const id = requireId(element, location);
   const { promoted, additionalAttributes } = splitAttributes(
     element,
@@ -177,6 +186,7 @@ function normalizeField(element: XmlElement, location: string): SystemField {
   const requires = takeRequires(buckets, location);
   const attributeNodes = takeAttributeNodes(buckets, location);
   const sourceService = takeSourceService(buckets);
+  const configPath = takeText(buckets, 'config_path', repeated);
 
   return {
     id,
@@ -191,7 +201,7 @@ function normalizeField(element: XmlElement, location: string): SystemField {
     ...optional('frontendModel', takeText(buckets, 'frontend_model', repeated)),
     ...optional('backendModel', takeText(buckets, 'backend_model', repeated)),
     ...optional('sourceModel', takeText(buckets, 'source_model', repeated)),
-    ...optional('configPath', takeText(buckets, 'config_path', repeated)),
+    configPath: configPath ?? `${sectionId}/${groupId}/${id}`,
     ...optional('validate', takeText(buckets, 'validate', repeated)),
     ...optional('canBeEmpty', takeText(buckets, 'can_be_empty', repeated)),
     ...optional(

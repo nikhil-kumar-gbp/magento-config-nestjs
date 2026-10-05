@@ -18,6 +18,10 @@ import {
 } from '@/constants/config.js';
 
 import type { SystemConfigResponse } from '@/types/magento-config.types.js';
+import { Repository } from 'typeorm';
+import { CoreConfig } from './magento-config.entity.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { isErrno, readMagentoRoot, emptyConfig } from '@/helper/index.js';
 
 @Injectable()
 export class MagentoConfigService {
@@ -25,7 +29,11 @@ export class MagentoConfigService {
   private readonly parser: XmlDocumentParser;
   private readonly normalizer: SystemXmlNormalizer;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectRepository(CoreConfig)
+    private readonly coreConfigRepository: Repository<CoreConfig>,
+  ) {
     this.magentoRoot = readMagentoRoot(this.configService);
     this.parser = new XmlDocumentParser();
     this.normalizer = new SystemXmlNormalizer();
@@ -105,6 +113,38 @@ export class MagentoConfigService {
     return modulesList;
   }
 
+  async getConfigValue(path: string): Promise<CoreConfig | null> {
+    try {
+      const config = await this.coreConfigRepository.findOne({
+        where: {
+          path,
+        },
+      });
+
+      if (!config) {
+        throw new NotFoundException(
+          `Config value for path "${path}" was not found.`,
+        );
+      }
+
+      return config;
+    } catch (error) {
+      console.log(error);
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      if (isErrno(error, 'ENOENT')) {
+        throw new NotFoundException(
+          `Config value for path "${path}" was not found.`,
+        );
+      }
+
+      return null;
+    }
+  }
+
   private moduleDirectory(moduleName: string): string {
     const match = MODULE_NAME_REGEX.exec(moduleName);
 
@@ -146,43 +186,4 @@ export class MagentoConfigService {
       throw error;
     }
   }
-}
-
-function emptyConfig(moduleName: string): SystemConfigResponse {
-  return {
-    module: moduleName,
-    file: SYSTEM_XML_PATH,
-    available: false,
-    tabs: [],
-    sections: [],
-  };
-}
-
-function readMagentoRoot(configService: ConfigService): string {
-  const root = configService.get('MAGENTO_ROOT')?.trim();
-  if (!root) {
-    throw new Error('Set MAGENTO_ROOT to the Magento project directory.');
-  }
-
-  let stat: fs.Stats;
-  try {
-    stat = fs.statSync(root);
-  } catch {
-    throw new Error(`MAGENTO_ROOT is not a directory: ${root}`);
-  }
-
-  if (!stat.isDirectory()) {
-    throw new Error(`MAGENTO_ROOT is not a directory: ${root}`);
-  }
-
-  return fs.realpathSync(root);
-}
-
-function isErrno(error: unknown, code: string): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === code
-  );
 }
